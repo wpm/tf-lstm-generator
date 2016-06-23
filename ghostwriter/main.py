@@ -3,6 +3,8 @@ from __future__ import print_function
 import argparse
 import logging
 
+from ghostwriter.tokenize import IndexedTokenizer, MultiFileLineEnumerator, EnglishWordTokenizer
+
 logger = logging.getLogger(__name__)
 
 
@@ -14,6 +16,11 @@ def main():
     args = parser.parse_args()
 
     configure_logger(args.log.upper(), "%(asctime)-15s %(levelname)-8s %(message)s")
+
+    tokens = EnglishWordTokenizer(MultiFileLineEnumerator(args.text_files))
+    indexes = IndexedTokenizer(tokens, args.max_vocabulary)
+    for index in indexes:
+        print(index)
 
 
 def configure_logger(level, format):
