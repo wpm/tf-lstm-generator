@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from ghostwriter.index import IndexedVocabulary
-from ghostwriter.tokenize import CharacterTokenizer, EnglishWordTokenizer, MultiFileLineEnumerator, IndexedTokenizer
+from ghostwriter.tokenize import CharacterTokenizer, EnglishWordTokenizer, MultiFileLineEnumerator, IndexedTokenizer, \
+    IndexedVocabulary
 
 
 class TestIndexing(TestCase):
