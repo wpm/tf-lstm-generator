@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from ghostwriter.data import skip_gram
 from ghostwriter.tokenize import CharacterTokenizer, EnglishWordTokenizer, MultiFileLineEnumerator, IndexedTokenizer, \
     IndexedVocabulary
 
@@ -51,3 +52,13 @@ class TestTokenization(TestCase):
         self.assertEqual(len(indexes), 6)
         tokens = [t[index] for index in indexes]
         self.assertEqual(tokens, ["to", "be", None, None, "to", "be"])
+
+
+class TestWordContext(TestCase):
+    def test_skip_gram(self):
+        skip_grams = list(skip_gram("to be or not to be".split(), 1))
+        self.assertEqual(skip_grams,
+                         [("be", "to"), ("be", "or"),
+                          ("or", "be"), ("or", "not"),
+                          ("not", "or"), ("not", "to"),
+                          ("to", "not"), ("to", "be")])
