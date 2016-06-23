@@ -1,6 +1,7 @@
+import tensorflow as tf
+
 __version__ = "1.0.0"
 
-import tensorflow as tf
 
 
 def noise_contrastive_estimation():
