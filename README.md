@@ -1,0 +1,4 @@
+Ghostwriter
+===========
+
+Machine-assisted writing.
