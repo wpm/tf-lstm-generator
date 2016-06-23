@@ -35,4 +35,4 @@ class IndexedVocabulary(object):
         return self.type_to_index[type]
 
     def type(self, index):
-        return self.index_to_type[index]
+        return self.index_to_type.get(index, None)
