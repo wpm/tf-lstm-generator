@@ -50,7 +50,7 @@ class CharacterTokenizer(Tokenizer):
     """
 
     def __repr__(self):
-        return "Word tokenizer for %s" % self.text_lines
+        return "Character tokenizer for %s" % self.text_lines
 
     def __iter__(self):
         return chain(*(iter(line) for line in self.text_lines))

@@ -29,8 +29,8 @@ class TestIndexing(TestCase):
 
 class TestTokenization(TestCase):
     def test_character_tokenizer(self):
-        t = CharacterTokenizer(["red blue", "green"])
-        self.assertEqual(list(t), ["r", "e", "d", " ", "b", "l", "u", "e", "g", "r", "e", "e", "n"])
+        t = CharacterTokenizer(["red blue\n", "green"])
+        self.assertEqual(list(t), ["r", "e", "d", " ", "b", "l", "u", "e", "\n", "g", "r", "e", "e", "n"])
 
     def test_word_tokenizer(self):
         t = EnglishWordTokenizer(["The quick brown fox", "jumped over the lazy dog."])
