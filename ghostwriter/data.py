@@ -46,7 +46,7 @@ def batch_iterate(xs, batch_size, concatenate=operator.add):
     The sequence concatenation can be specified, since different sequence types may have different concatenation
     operations.
 
-    >>> batch_iterate("abcd", 3), 5) # Generates ["abc", "dab", "cda", "bcd", "abc", "dab" ...]
+    >>> batch_iterate("abcd", 3) # Generates ["abc", "dab", "cda", "bcd", "abc", "dab" ...]
 
     :param xs: items to group into batches
     :type xs: sequence
