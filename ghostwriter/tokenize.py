@@ -1,5 +1,5 @@
 from collections import Counter
-from itertools import chain
+from itertools import chain, takewhile
 
 from nltk import word_tokenize
 
@@ -61,15 +61,17 @@ class IndexedTokenizer(object):
     Tokenize a sequence of text files into a set of integer indexes of the tokens.
     """
 
-    def __init__(self, tokens, max_vocabulary=None):
+    def __init__(self, tokens, min_frequency=None, max_vocabulary=None):
         """
         :param tokens: iterator of tokens
         :type tokens: iterator
+        :param min_frequency: minimum token frequency for inclusion in the vocabulary
+        :type min_frequency: int or None
         :param max_vocabulary: maximum vocabulary size
         :type max_vocabulary: int or None
         """
         self.tokens = tokens
-        self.indexed_vocabulary = IndexedVocabulary(self.tokens, max_vocabulary)
+        self.indexed_vocabulary = IndexedVocabulary(self.tokens, min_frequency, max_vocabulary)
 
     def __repr__(self):
         return "%s, %s" % (self.tokens, self.indexed_vocabulary)
@@ -97,18 +99,26 @@ class IndexedVocabulary(object):
     Given a sequence of tokens, create a unique integer mapping from an integer to a type. Out of vocabulary types map
     to a default value of zero.
 
-    If a maximum vocabulary size is specified, only the most frequent types will be indexed.
+    If a minimum token frequency is specified, all tokens with a lower frequency are mapped to out of vocabulary. If a
+    maximum vocabulary size is specified, only the most frequent types will be indexed.
     """
 
-    def __init__(self, tokens, max_vocabulary=None):
+    def __init__(self, tokens, min_frequency=None, max_vocabulary=None):
         """
         :param tokens: sequence of natural language tokens
         :type tokens: iterator of str
+        :param min_frequency: minimum token frequency for inclusion in the vocabulary
+        :type min_frequency: int or None
         :param max_vocabulary: maximum vocabulary size
         :type max_vocabulary: int or None
         """
-        indexes = (t for t, _ in Counter(tokens).most_common(max_vocabulary))
-        self.index_to_type = dict(enumerate(indexes, 1))
+        # Sort in descending order by frequency and then by token so that the composition of the vocabulary is
+        # deterministic.
+        types = sorted(Counter(tokens).items(), key=lambda t: (-t[1], t[0]))
+        if min_frequency is not None:
+            types = list(takewhile(lambda t: t[1] >= min_frequency, types))
+        types = types[:max_vocabulary]
+        self.index_to_type = dict(enumerate((t for t, _ in types), 1))
         self.type_to_index = dict(map(reversed, self.index_to_type.items()))
 
     def __repr__(self):
