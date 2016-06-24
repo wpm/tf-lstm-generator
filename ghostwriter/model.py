@@ -45,6 +45,7 @@ def noise_contrastive_estimation(data, batch_size,
                 if i == iterations:
                     break
             train_writer.flush()
+        logger.info("%0.3f epochs" % (iterations * batch_size / n))
 
 
 def summary_writer(summary_directory, graph):
