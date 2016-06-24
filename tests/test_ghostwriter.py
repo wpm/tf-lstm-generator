@@ -1,6 +1,10 @@
+from itertools import islice
 from unittest import TestCase
 
-from ghostwriter.data import skip_gram
+import numpy
+from numpy import array
+
+from ghostwriter.data import skip_gram, LabeledData, batch_iterate
 from ghostwriter.tokenize import CharacterTokenizer, EnglishWordTokenizer, MultiFileLineEnumerator, IndexedTokenizer, \
     IndexedVocabulary
 
@@ -64,3 +68,35 @@ class TestWordContext(TestCase):
                           ("or", "be"), ("or", "not"),
                           ("not", "or"), ("not", "to"),
                           ("to", "not"), ("to", "be")])
+
+
+class TestData(TestCase):
+    def test_labeled_data(self):
+        vectors = [
+            [10, 20, 30],
+            [40, 50, 60],
+            [70, 80, 90],
+            [100, 110, 120],
+            [130, 140, 150]
+        ]
+        labels = [1, 2, 3, 4, 5]
+        data = LabeledData(vectors, labels)
+        # 4 batches of size 2 loops around to the first item.
+        batches = list(islice(data.batches(2), 4))
+        expected = [
+            (array([[10, 20, 30], [40, 50, 60]]), array([1, 2])),
+            (array([[70, 80, 90], [100, 110, 120]]), array([3, 4])),
+            (array([[130, 140, 150], [10, 20, 30]]), array([5, 1])),
+            (array([[40, 50, 60], [70, 80, 90]]), array([2, 3]))
+        ]
+        numpy.testing.assert_equal(batches, expected)
+
+    def test_batch_iterate(self):
+        x = list(islice(batch_iterate("abcd", 2), 5))
+        self.assertEqual(x, ["ab", "cd", "ab", "cd", "ab"])
+        x = list(islice(batch_iterate("abcd", 3), 5))
+        self.assertEqual(x, ["abc", "dab", "cda", "bcd", "abc"])
+        x = list(islice(batch_iterate("abcd", 4), 3))
+        self.assertEqual(x, ["abcd", "abcd", "abcd"])
+        x = list(islice(batch_iterate("abcd", 1000), 3))
+        self.assertEqual(x, ["abcd", "abcd", "abcd"])

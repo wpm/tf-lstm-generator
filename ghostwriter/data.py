@@ -1,6 +1,6 @@
-from itertools import cycle
+import operator
 
-from numpy import array_split
+import numpy
 from numpy.core.numeric import array
 
 
@@ -29,9 +29,44 @@ class LabeledData(object):
         :return: vectors and labels
         :rtype: (numpy.array, numpy.array)
         """
-        vector_batches = array_split(self.vectors, batch_size)
-        label_batches = array_split(self.labels, batch_size)
-        return zip(cycle(vector_batches), cycle(label_batches))
+
+        def concatenate(a, b):
+            return numpy.concatenate((a, b))
+
+        vector_batches = batch_iterate(self.vectors, batch_size, concatenate)
+        label_batches = batch_iterate(self.labels, batch_size, concatenate)
+        return zip(vector_batches, label_batches)
+
+
+def batch_iterate(xs, batch_size, concatenate=operator.add):
+    """
+    Iterate over a sequence yielding batches of a specified size. When the end of the sequence is reached, start over at
+    the beginning. The batches will all be the same size and the iterator is infinite.
+
+    The sequence concatenation can be specified, since different sequence types may have different concatenation
+    operations.
+
+    >>> batch_iterate("abcd", 3), 5) # Generates ["abc", "dab", "cda", "bcd", "abc", "dab" ...]
+
+    :param xs: items to group into batches
+    :type xs: sequence
+    :param batch_size: number of items in a batch
+    :type batch_size: int
+    :param concatenate: function to concatenate two sequences of items
+    :type concatenate: func
+    :return: iteration of item batches
+    :rtype: iterator
+    """
+    n = len(xs)
+    batch_size = min(batch_size, n)
+    i = 0
+    while True:
+        j = (i + batch_size) % n
+        if i < j:
+            yield xs[i:j]
+        else:
+            yield concatenate(xs[i:], xs[:j])
+        i = j
 
 
 def skip_gram_data_set(tokens, width):
