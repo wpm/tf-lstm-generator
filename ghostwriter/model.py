@@ -5,13 +5,16 @@ import tensorflow as tf
 from ghostwriter import logger
 
 
-def noise_contrastive_estimation(data, vocabulary_size, embedding_size, summary_directory, report_interval, iterations):
+def noise_contrastive_estimation(data, batch_size,
+                                 vocabulary_size, embedding_size,
+                                 summary_directory, report_interval,
+                                 iterations):
     shape = [vocabulary_size, embedding_size]
 
     with tf.Graph().as_default():
         with tf.name_scope("Input"):
-            inputs = tf.placeholder(tf.int32, shape=data.batch_size, name="inputs")
-            labels = tf.placeholder(tf.int32, shape=[data.batch_size, 1], name="labels")
+            inputs = tf.placeholder(tf.int32, shape=[batch_size], name="inputs")
+            labels = tf.placeholder(tf.int32, shape=[batch_size, 1], name="labels")
 
         with tf.name_scope("Embedding"):
             embeddings = tf.Variable(tf.random_uniform(shape, -1.0, 1.0), name="embeddings")
@@ -21,24 +24,24 @@ def noise_contrastive_estimation(data, vocabulary_size, embedding_size, summary_
 
         with tf.name_scope("Training"):
             iteration = tf.Variable(0, name="iteration", trainable=False)
-            loss = tf.reduce_mean(tf.nn.nce_loss(w, b, lookup, inputs, labels, 5, vocabulary_size), name="loss")
+            loss = tf.reduce_mean(tf.nn.nce_loss(w, b, lookup, labels, 5, vocabulary_size), name="loss")
             tf.scalar_summary(loss.op.name, loss)
             training_step = tf.train.GradientDescentOptimizer(learning_rate=1.0).minimize(loss, global_step=iteration)
 
         summary = tf.merge_all_summaries()
 
-    with tf.Session() as session:
-        train_writer = summary_writer(summary_directory, session.graph)
-        session.run(tf.initialize_all_variables())
-        for input_batch, label_batch in data.batches():
-            s, i, l, _ = session.run([summary, iteration, loss, training_step],
-                                     {inputs: input_batch, labels: label_batch})
-            if i % report_interval == 0:
-                logger.info("Iteration %d: loss %0.5f" % (i, l))
-                train_writer.add_summary(s, global_step=i)
-            if i == iterations:
-                break
-        train_writer.flush()
+        with tf.Session() as session:
+            train_writer = summary_writer(summary_directory, session.graph)
+            session.run(tf.initialize_all_variables())
+            for input_batch, label_batch in data.batches(batch_size):
+                s, i, l, _ = session.run([summary, iteration, loss, training_step],
+                                         feed_dict={inputs: input_batch, labels: label_batch})
+                if i % report_interval == 0:
+                    logger.info("Iteration %d: loss %0.5f" % (i, l))
+                    train_writer.add_summary(s, global_step=i)
+                if i == iterations:
+                    break
+            train_writer.flush()
 
 
 def summary_writer(summary_directory, graph):

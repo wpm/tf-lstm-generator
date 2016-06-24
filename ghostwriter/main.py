@@ -27,8 +27,9 @@ def main():
     train = subparsers.add_parser("train", parents=[shared_arguments], help="train a language model",
                                   description="""Train a language model with noise constrastive estimation.""")
     train.add_argument("--width", type=int, default=1, help="skip-gram window size")
-    train.add_argument("--embedding", type=int, default=128, help="embedding vector size")
-    train.add_argument("--summary", help="summary directory")
+    train.add_argument("--batch-size", type=int, default=100, help="minibatch size")
+    train.add_argument("--embedding-size", type=int, default=128, help="embedding vector size")
+    train.add_argument("--summary-directory", help="directory into which to write summary files")
     train.add_argument("--report-interval", type=int, default=100,
                        help="write summary and log after this many iterations")
     train.add_argument("--iterations", type=int, default=1000, help="total training iterations")
@@ -58,7 +59,7 @@ def tokenize_command(args):
 def train_command(args):
     tokens = indexed_tokens(args.text_files, args.tokenizer, args.max_vocabulary)
     data = skip_gram_data_set(tokens, args.width)
-    noise_contrastive_estimation(data,
+    noise_contrastive_estimation(data, args.batch_size,
                                  tokens.vocabulary_size(), args.embedding_size,
                                  args.summary_directory, args.report_interval,
                                  args.iterations)
