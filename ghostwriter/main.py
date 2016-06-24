@@ -1,16 +1,14 @@
-from __future__ import print_function
-
-import textwrap
-
-from ghostwriter.data import skip_gram_data_set
-from ghostwriter.model import noise_contrastive_estimation
-
 """Analyze and generate text."""
 
+from __future__ import print_function
+
 import argparse
+import textwrap
 from argparse import RawDescriptionHelpFormatter as Raw
 
 from ghostwriter import configure_logger, __version__
+from ghostwriter.data import skip_gram_data_set
+from ghostwriter.model import noise_contrastive_estimation
 from ghostwriter.tokenize import IndexedTokenizer, MultiFileLineEnumerator, EnglishWordTokenizer, CharacterTokenizer
 
 
