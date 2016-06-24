@@ -119,7 +119,8 @@ class IndexedVocabulary(object):
             repr(self), " ".join("%s:%d" % (t, i) for i, t in sorted(self.index_to_type.items())[:5]))
 
     def __len__(self):
-        return len(self.type_to_index)
+        # Add 1 for the out of vocabulary type.
+        return len(self.type_to_index) + 1
 
     def index(self, type):
         """

@@ -12,11 +12,12 @@ from ghostwriter.tokenize import CharacterTokenizer, EnglishWordTokenizer, Multi
 class TestIndexing(TestCase):
     def test_full_vocabulary(self):
         v = IndexedVocabulary("the quick brown fox jumped over the lazy dog".split())
-        self.assertEqual(len(v), 8)
+        self.assertEqual(len(v), 9)
+        self.assertEqual(set(v.type_to_index.keys()), {"the", "quick", "brown", "fox", "jumped", "over", "lazy", "dog"})
 
     def test_limited_vocabulary(self):
         v = IndexedVocabulary("to be or not to be".split(), 2)
-        self.assertEqual(len(v), 2)
+        self.assertEqual(len(v), 3)
         self.assertEqual(set(v.type_to_index.keys()), {"to", "be"})
 
 
@@ -47,7 +48,7 @@ class TestTokenization(TestCase):
         t = IndexedTokenizer("to be or not to be".split())
         indexes = list(t)
         self.assertEqual(len(indexes), 6)
-        self.assertEqual(t.vocabulary_size(), 4)
+        self.assertEqual(t.vocabulary_size(), 5)
         tokens = [t[index] for index in indexes]
         self.assertEqual(tokens, ["to", "be", "or", "not", "to", "be"])
 
@@ -55,7 +56,7 @@ class TestTokenization(TestCase):
         t = IndexedTokenizer("to be or not to be".split(), 2)
         indexes = list(t)
         self.assertEqual(len(indexes), 6)
-        self.assertEqual(t.vocabulary_size(), 2)
+        self.assertEqual(t.vocabulary_size(), 3)
         tokens = [t[index] for index in indexes]
         self.assertEqual(tokens, ["to", "be", None, None, "to", "be"])
 
