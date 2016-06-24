@@ -3,8 +3,6 @@ from itertools import cycle
 from numpy import array_split
 from numpy.core.numeric import array
 
-from ghostwriter.tokenize import IndexedTokenizer
-
 
 class LabeledData(object):
     """
@@ -36,9 +34,8 @@ class LabeledData(object):
         return zip(cycle(vector_batches), cycle(label_batches))
 
 
-def skip_gram_data_set(tokens, width, max_vocabulary=None):
-    indexed_tokens = IndexedTokenizer(tokens, max_vocabulary)
-    targets, contexts = zip(*skip_gram(indexed_tokens, width))
+def skip_gram_data_set(tokens, width):
+    targets, contexts = zip(*skip_gram(tokens, width))
     return LabeledData(targets, contexts)
 
 

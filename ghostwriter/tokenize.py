@@ -88,6 +88,9 @@ class IndexedTokenizer(object):
         """
         return self.indexed_vocabulary.type(index)
 
+    def vocabulary_size(self):
+        return len(self.indexed_vocabulary)
+
 
 class IndexedVocabulary(object):
     """

@@ -43,6 +43,7 @@ class TestTokenization(TestCase):
         t = IndexedTokenizer("to be or not to be".split())
         indexes = list(t)
         self.assertEqual(len(indexes), 6)
+        self.assertEqual(t.vocabulary_size(), 4)
         tokens = [t[index] for index in indexes]
         self.assertEqual(tokens, ["to", "be", "or", "not", "to", "be"])
 
@@ -50,6 +51,7 @@ class TestTokenization(TestCase):
         t = IndexedTokenizer("to be or not to be".split(), 2)
         indexes = list(t)
         self.assertEqual(len(indexes), 6)
+        self.assertEqual(t.vocabulary_size(), 2)
         tokens = [t[index] for index in indexes]
         self.assertEqual(tokens, ["to", "be", None, None, "to", "be"])
 
