@@ -1,6 +1,7 @@
 import math
 
 import tensorflow as tf
+from numpy import reshape
 
 from ghostwriter import logger
 
@@ -9,6 +10,8 @@ def noise_contrastive_estimation(data, batch_size,
                                  vocabulary_size, embedding_size,
                                  summary_directory, report_interval,
                                  iterations):
+    n = len(data)
+    logger.info("%d training items, %d iterations per epoch" % (n, math.ceil(n / batch_size)))
     shape = [vocabulary_size, embedding_size]
 
     with tf.Graph().as_default():
@@ -35,7 +38,7 @@ def noise_contrastive_estimation(data, batch_size,
             session.run(tf.initialize_all_variables())
             for input_batch, label_batch in data.batches(batch_size):
                 s, i, l, _ = session.run([summary, iteration, loss, training_step],
-                                         feed_dict={inputs: input_batch, labels: label_batch})
+                                         feed_dict={inputs: input_batch, labels: reshape(label_batch, (-1, 1))})
                 if i % report_interval == 0:
                     logger.info("Iteration %d: loss %0.5f" % (i, l))
                     train_writer.add_summary(s, global_step=i)
