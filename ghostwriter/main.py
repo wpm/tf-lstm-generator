@@ -19,7 +19,7 @@ def main():
     shared_arguments.add_argument("--log", default="INFO", help="logging level")
     shared_arguments.add_argument("text_files", type=argparse.FileType(), nargs="+", help="a text file")
     shared_arguments.add_argument("--tokenizer", choices=["word", "character"], default="word",
-                                  help="text tokenizer type")
+                                  help="text tokenizer type, default word")
     shared_arguments.add_argument("--min-frequency", type=int,
                                   help="minimum token frequency for inclusion in the vocabulary")
     shared_arguments.add_argument("--max-vocabulary", type=int, help="maximum vocabulary size")
@@ -27,23 +27,30 @@ def main():
     subparsers = parser.add_subparsers(title="Machine-assisted writing", description=__doc__)
 
     train = subparsers.add_parser("train", parents=[shared_arguments], help="train a language model",
-                                  description="""Train a language model with noise contrastive estimation.""")
-    train.add_argument("--width", type=int, default=1, help="skip-gram window size")
-    train.add_argument("--batch-size", type=int, default=100, help="minibatch size")
-    train.add_argument("--embedding-size", type=int, default=128, help="vocabulary embedding size")
+                                  formatter_class=Raw,
+                                  description=textwrap.dedent("""
+                                  Train a language model with noise contrastive estimation.
+
+                                  See ghostwriter tokenize --help for details about tokenization."""))
+    train.add_argument("--width", type=int, default=1, help="skip-gram window size, default 1")
+    train.add_argument("--batch-size", type=int, default=100, help="minibatch size, default 100")
+    train.add_argument("--embedding-size", type=int, default=128, help="vocabulary embedding size, default 128")
     train.add_argument("--summary-directory", help="directory into which to write summary files")
     train.add_argument("--report-interval", type=int, default=100,
-                       help="log and write summary after this many iterations")
-    train.add_argument("--iterations", type=int, default=1000, help="total training iterations")
+                       help="log and write summary after this many iterations, default 100")
+    train.add_argument("--iterations", type=int, default=1000, help="total training iterations, default 1000")
     train.set_defaults(func=train_command)
 
     tokenize = subparsers.add_parser("tokenize", parents=[shared_arguments], help="tokenize text files",
                                      formatter_class=Raw,
                                      description=textwrap.dedent("""
-        Tokenize a set of files into indexed lists of either words or characters.
-        Print the indexes and the types on separate lines.
-        If a maximum vocabulary size is specified, only the most common types will be kept.
-        The others will be mapped to an out of vocabulary type."""))
+        Tokenize a set of files into indexed lists of either words or characters. Print
+        the indexes and their types on separate lines.
+
+        Types with a token frequency below a minimum value may be omitted from the
+        vocabulary, and the vocabulary size may be capped, keeping the most common
+        types. If a type is omitted from the vocabulary, it is mapped to a special
+        out of vocabulary type."""))
     tokenize.set_defaults(func=tokenize_command)
 
     args = parser.parse_args()
