@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import Counter
 from itertools import chain
 
 from nltk import word_tokenize
@@ -109,8 +109,7 @@ class IndexedVocabulary(object):
         """
         indexes = (t for t, _ in Counter(tokens).most_common(max_vocabulary))
         self.index_to_type = dict(enumerate(indexes, 1))
-        # noinspection PyArgumentList
-        self.type_to_index = defaultdict(int, dict(map(reversed, self.index_to_type.items())))
+        self.type_to_index = dict(map(reversed, self.index_to_type.items()))
 
     def __repr__(self):
         return "Indexed Vocabulary, size %d" % len(self)
@@ -129,7 +128,7 @@ class IndexedVocabulary(object):
         :return: index of the type
         :rtype: int
         """
-        return self.type_to_index[type]
+        return self.type_to_index.get(type, 0)
 
     def type(self, index):
         """
