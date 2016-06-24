@@ -6,7 +6,7 @@ setup(
     name="ghostwriter",
     version=ghostwriter.__version__,
     packages=['ghostwriter'],
-    url="",
+    url="https://github.com/wpm/ghostwriter",
     license="",
     author="W.P. McNeill",
     author_email="billmcn@gmail.com",
