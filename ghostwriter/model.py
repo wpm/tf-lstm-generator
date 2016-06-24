@@ -50,7 +50,7 @@ def noise_contrastive_estimation(data, batch_size,
 
 def summary_writer(summary_directory, graph):
     class NullSummaryWriter(object):
-        def add_summary(self, *args):
+        def add_summary(self, *args, **kwargs):
             pass
 
         def flush(self):
