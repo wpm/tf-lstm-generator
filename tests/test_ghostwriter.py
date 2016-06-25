@@ -1,10 +1,11 @@
+import collections
 from itertools import islice
 from unittest import TestCase
 
 import numpy
-from numpy import array
+from numpy import array, arange
 
-from ghostwriter.data import skip_gram, LabeledData, batch_iterate
+from ghostwriter.data import skip_gram, LabeledData, batch_iterate, sequence_data_epoch
 from ghostwriter.tokenize import CharacterTokenizer, EnglishWordTokenizer, MultiFileLineEnumerator, IndexedTokenizer, \
     IndexedVocabulary
 
@@ -75,6 +76,71 @@ class TestWordContext(TestCase):
                           ("or", "be"), ("or", "not"),
                           ("not", "or"), ("not", "to"),
                           ("to", "not"), ("to", "be")])
+
+
+class SequenceModelEpoch(TestCase):
+    def test_even_multiple(self):
+        actual = sequence_data_epoch(arange(10), 2, 5)
+        self.assertIsInstance(actual, collections.Iterable)
+        actual = list(actual)
+        numpy.testing.assert_equal(actual,
+                                   [
+                                       (
+                                           # xs
+                                           array([[0, 1, 2, 3, 4],
+                                                  [5, 6, 7, 8, 9]]),
+                                           # ys
+                                           array([[1, 2, 3, 4, 5],
+                                                  [6, 7, 8, 9, 0]])
+                                       )
+                                   ],
+                                   err_msg=repr(actual))
+
+    def test_remainder(self):
+        actual = sequence_data_epoch(arange(10), 2, 6)
+        self.assertIsInstance(actual, collections.Iterable)
+        actual = list(actual)
+        numpy.testing.assert_equal(actual,
+                                   [
+                                       (
+                                           # xs
+                                           array([[0, 1, 2, 3, 4, 5],
+                                                  [6, 7, 8, 9, 0, 0]]),
+                                           # ys
+                                           array([[1, 2, 3, 4, 5, 6],
+                                                  [7, 8, 9, 0, 0, 0]])
+                                       )
+                                   ],
+                                   err_msg=repr(actual))
+
+    def test_multiple_batches(self):
+        actual = sequence_data_epoch(arange(10), 3, 2)
+        self.assertIsInstance(actual, collections.Iterable)
+        actual = list(actual)
+        numpy.testing.assert_equal(actual,
+                                   [
+                                       (
+                                           # xs
+                                           array([[0, 1],
+                                                  [2, 3],
+                                                  [4, 5]]),
+                                           # ys
+                                           array([[1, 2],
+                                                  [3, 4],
+                                                  [5, 6]])
+                                       ),
+                                       (
+                                           # xs
+                                           array([[6, 7],
+                                                  [8, 9],
+                                                  [0, 0]]),
+                                           # ys
+                                           array([[7, 8],
+                                                  [9, 0],
+                                                  [0, 0]])
+                                       )
+                                   ],
+                                   err_msg=repr(actual))
 
 
 class TestData(TestCase):

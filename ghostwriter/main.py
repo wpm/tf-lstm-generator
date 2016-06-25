@@ -8,40 +8,48 @@ from argparse import RawDescriptionHelpFormatter as Raw
 
 from ghostwriter import configure_logger, __version__, logger
 from ghostwriter.data import skip_gram_data_set
-from ghostwriter.model import noise_contrastive_estimation
+from ghostwriter.model import create_embeddings, train_language_model
 from ghostwriter.tokenize import IndexedTokenizer, MultiFileLineEnumerator, EnglishWordTokenizer, CharacterTokenizer
 
 
 def main():
     parser = argparse.ArgumentParser(description="Ghostwriter version %s" % __version__)
 
-    shared_arguments = argparse.ArgumentParser(add_help=False)
-    shared_arguments.add_argument("--log", default="INFO", help="logging level")
-    shared_arguments.add_argument("text_files", type=argparse.FileType(), nargs="+", help="a text file")
-    shared_arguments.add_argument("--tokenizer", choices=["word", "character"], default="word",
-                                  help="text tokenizer type, default word")
-    shared_arguments.add_argument("--min-frequency", type=int,
-                                  help="minimum token frequency for inclusion in the vocabulary")
-    shared_arguments.add_argument("--max-vocabulary", type=int, help="maximum vocabulary size")
+    tokenize_arguments = argparse.ArgumentParser(add_help=False)
+    tokenize_arguments.add_argument("--log", default="INFO", help="logging level")
+    tokenize_arguments.add_argument("text_files", type=argparse.FileType(), nargs="+", help="a text file")
+    tokenize_arguments.add_argument("--tokenizer", choices=["word", "character"], default="word",
+                                    help="text tokenizer type, default word")
+    tokenize_arguments.add_argument("--min-frequency", type=int,
+                                    help="minimum token frequency for inclusion in the vocabulary")
+    tokenize_arguments.add_argument("--max-vocabulary", type=int, help="maximum vocabulary size")
+
+    train_arguments = argparse.ArgumentParser(add_help=False)
+    train_arguments.add_argument("--batch-size", type=int, default=100, help="batch size, default 100")
 
     subparsers = parser.add_subparsers(title="Machine-assisted writing", description=__doc__)
 
-    train = subparsers.add_parser("train", parents=[shared_arguments], help="train a language model",
-                                  formatter_class=Raw,
-                                  description=textwrap.dedent("""
-                                  Train a language model with noise contrastive estimation.
-
-                                  See ghostwriter tokenize --help for details about tokenization."""))
-    train.add_argument("--width", type=int, default=1, help="skip-gram window size, default 1")
-    train.add_argument("--batch-size", type=int, default=100, help="minibatch size, default 100")
-    train.add_argument("--embedding-size", type=int, default=128, help="vocabulary embedding size, default 128")
-    train.add_argument("--summary-directory", help="directory into which to write summary files")
-    train.add_argument("--report-interval", type=int, default=100,
-                       help="log and write summary after this many iterations, default 100")
-    train.add_argument("--iterations", type=int, default=1000, help="total training iterations, default 1000")
+    train = subparsers.add_parser("train", parents=[tokenize_arguments, train_arguments], help="train a language model")
+    train.add_argument("--hidden-size", type=int, default=100, help="hidden variables in RNN, default 100")
+    train.add_argument("--rnn-depth", type=int, default=1, help="RNN depth, default 1")
+    train.add_argument("--time-steps", type=int, default=10, help="RNN time steps to unroll, default 10")
     train.set_defaults(func=train_command)
 
-    tokenize = subparsers.add_parser("tokenize", parents=[shared_arguments], help="tokenize text files",
+    embed = subparsers.add_parser("embed", parents=[tokenize_arguments, train_arguments], help="create word embeddings",
+                                  formatter_class=Raw,
+                                  description=textwrap.dedent("""
+                                  Create token embeddings with noise contrastive estimation.
+
+                                  See ghostwriter tokenize --help for details about tokenization."""))
+    embed.add_argument("--width", type=int, default=1, help="skip-gram window size, default 1")
+    embed.add_argument("--embedding-size", type=int, default=128, help="vocabulary embedding size, default 128")
+    embed.add_argument("--summary-directory", help="directory into which to write summary files")
+    embed.add_argument("--report-interval", type=int, default=100,
+                       help="log and write summary after this many iterations, default 100")
+    embed.add_argument("--iterations", type=int, default=1000, help="total training iterations, default 1000")
+    embed.set_defaults(func=embed_command)
+
+    tokenize = subparsers.add_parser("tokenize", parents=[tokenize_arguments], help="tokenize text files",
                                      formatter_class=Raw,
                                      description=textwrap.dedent("""
         Tokenize a set of files into indexed lists of either words or characters. Print
@@ -58,6 +66,24 @@ def main():
     args.func(args)
 
 
+def train_command(args):
+    tokens = indexed_tokens(args.text_files, args.tokenizer, args.min_frequency, args.max_vocabulary)
+    train_language_model(tokens,
+                         args.hidden_size, args.rnn_depth,
+                         args.batch_size, args.time_steps,
+                         5,
+                         tokens.vocabulary_size())
+
+
+def embed_command(args):
+    tokens = indexed_tokens(args.text_files, args.tokenizer, args.min_frequency, args.max_vocabulary)
+    data = skip_gram_data_set(tokens, args.width)
+    create_embeddings(data, args.batch_size,
+                      tokens.vocabulary_size(), args.embedding_size,
+                      args.summary_directory, args.report_interval,
+                      args.iterations)
+
+
 def tokenize_command(args):
     tokens = indexed_tokens(args.text_files, args.tokenizer, args.min_frequency, args.max_vocabulary)
     n = 0
@@ -66,15 +92,6 @@ def tokenize_command(args):
         print("%d\t%s" % (index, tokens[index]))
         n += 1
     logger.info("%d tokens, %d types" % (n, tokens.vocabulary_size()))
-
-
-def train_command(args):
-    tokens = indexed_tokens(args.text_files, args.tokenizer, args.min_frequency, args.max_vocabulary)
-    data = skip_gram_data_set(tokens, args.width)
-    noise_contrastive_estimation(data, args.batch_size,
-                                 tokens.vocabulary_size(), args.embedding_size,
-                                 args.summary_directory, args.report_interval,
-                                 args.iterations)
 
 
 def indexed_tokens(text_files, tokenizer, min_frequency, max_vocabulary):

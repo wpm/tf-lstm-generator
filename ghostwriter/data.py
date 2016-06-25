@@ -1,7 +1,51 @@
 import operator
 
 import numpy
-from numpy.core.numeric import array
+from numpy import array
+
+
+def labeled_data(labeled_data_epoch):
+    """
+    This enumerates repeatedly over labeled data, returning pairs of vectors and labels.
+
+    :param labeled_data_epoch: function that returns an iterator over all the vectors and labels in an epoch of data
+    :type labeled_data_epoch: function
+    :return: epoch number, iteration number, vectors, labels
+    :rtype: (int, int, numpy.array, numpy.array)
+    """
+    epoch = 1
+    iteration = 1
+    while True:
+        for xs, ys in labeled_data_epoch():
+            yield epoch, iteration, xs, ys
+            iteration += 1
+        epoch += 1
+
+
+def sequence_data_epoch(items, batch_size, sequence_length):
+    """
+    Enumerator over sequences of items, as in the training data for a language model.
+
+    :param items: the items to enumerate over
+    :type items: iterable
+    :param batch_size:
+    :type batch_size: int
+    :param sequence_length:
+    :type sequence_length: int
+    :return: enumeration over items and their preceding contexts
+    :rtype: iteration of (numpy.array, numpy.array), each array is of size batch_size x sequence_length
+    """
+
+    def batched_sequences(batch_items):
+        zs = numpy.zeros(n, dtype=items.dtype)
+        numpy.copyto(zs[:len(batch_items)], batch_items)
+        return zs.reshape((batch_size, sequence_length))
+
+    n = batch_size * sequence_length
+    for i in range(0, len(items), n):
+        xs = batched_sequences(items[i:i + n])
+        ys = batched_sequences(items[i + 1:i + n + 1])
+        yield xs, ys
 
 
 class LabeledData(object):
@@ -29,13 +73,13 @@ class LabeledData(object):
         :return: vectors and labels
         :rtype: (numpy.array, numpy.array)
         """
-
-        def concatenate(a, b):
-            return numpy.concatenate((a, b))
-
-        vector_batches = batch_iterate(self.vectors, batch_size, concatenate)
-        label_batches = batch_iterate(self.labels, batch_size, concatenate)
+        vector_batches = batch_iterate(self.vectors, batch_size, concatenate_arrays)
+        label_batches = batch_iterate(self.labels, batch_size, concatenate_arrays)
         return zip(vector_batches, label_batches)
+
+
+def concatenate_arrays(a, b):
+    return numpy.concatenate((a, b))
 
 
 def batch_iterate(xs, batch_size, concatenate=operator.add):
