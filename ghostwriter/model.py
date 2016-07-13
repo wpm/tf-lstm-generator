@@ -40,11 +40,21 @@ def train_language_model(tokens, hidden_size, rnn_depth, batch_size, time_steps,
         tokens = numpy.array(list(tokens))
         with tf.Session() as session:
             tf.initialize_all_variables().run()
-            for epoch, iteration, xs, ys in labeled_data(
+            previous_epoch = 1
+            epoch_cost = 0
+            predictions = 0
+            for epoch, iteration, vectors, labels in labeled_data(
                     lambda: sequence_data_epoch(tokens, batch_size, time_steps)):
+                if not epoch == previous_epoch:
+                    logger.info("Epoch %d, Training Perplexity %0.3f" %
+                                (previous_epoch, numpy.exp(epoch_cost / predictions)))
+                    epoch_cost = 0
+                    previous_epoch = epoch
                 if epoch > 5:
                     break
-                c, _ = session.run([cost, train], feed_dict={x: xs, y: ys})
+                c, _ = session.run([cost, train], feed_dict={x: vectors, y: labels})
+                epoch_cost += c
+                predictions += len(labels)
                 if iteration % 10 == 0:
                     logger.info("Iteration %d (Epoch %d): Loss %0.3f" % (iteration, epoch, c))
 
