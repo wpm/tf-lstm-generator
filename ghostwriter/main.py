@@ -26,7 +26,12 @@ def main():
 
     train_arguments = argparse.ArgumentParser(add_help=False)
     train_arguments.add_argument("--batch-size", type=int, default=100, help="batch size, default 100")
-    train_arguments.add_argument("--summary-directory", help="directory into which to write summary files")
+    train_arguments.add_argument("--summary-directory",
+                                 help="directory into which to write summary files, default do not summarize")
+    train_arguments.add_argument("--max-epoch", type=int, default=5, help="number of training epochs, default 5")
+    train_arguments.add_argument("--max-iteration", type=int, help="number of training iterations, default unlimited")
+    train_arguments.add_argument("--report-interval", type=int, default=10,
+                                 help="log and write summary after this many iterations, default 10")
 
     subparsers = parser.add_subparsers(title="Machine-assisted writing", description=__doc__)
 
@@ -44,8 +49,6 @@ def main():
                                   See ghostwriter tokenize --help for details about tokenization."""))
     embed.add_argument("--width", type=int, default=1, help="skip-gram window size, default 1")
     embed.add_argument("--embedding-size", type=int, default=128, help="vocabulary embedding size, default 128")
-    embed.add_argument("--report-interval", type=int, default=100,
-                       help="log and write summary after this many iterations, default 100")
     embed.add_argument("--iterations", type=int, default=1000, help="total training iterations, default 1000")
     embed.set_defaults(func=embed_command)
 
@@ -73,6 +76,7 @@ def train_command(args):
                          args.batch_size, args.time_steps,
                          5,
                          tokens.vocabulary_size(),
+                         args.report_interval, args.max_epoch, args.max_iteration,
                          args.summary_directory)
 
 

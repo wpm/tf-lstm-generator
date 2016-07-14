@@ -11,6 +11,7 @@ def train_language_model(tokens,
                          hidden_size, rnn_depth,
                          batch_size, time_steps,
                          max_gradient, vocabulary_size,
+                         report_interval, max_epoch, max_iteration,
                          summary_directory):
     with tf.Graph().as_default(), tf.variable_scope("model", initializer=tf.random_uniform_initializer(-0.01, 0.01)):
         x = tf.placeholder(tf.int32, shape=[batch_size, time_steps], name="x")
@@ -59,14 +60,16 @@ def train_language_model(tokens,
                                 (previous_epoch, numpy.exp(epoch_cost / predictions)))
                     epoch_cost = 0
                     previous_epoch = epoch
-                if epoch > 5:
+                if max_epoch is not None and epoch > max_epoch:
                     break
                 s, i, c, _ = session.run([summary, iteration, cost, train], feed_dict={x: vectors, y: labels})
                 epoch_cost += c
                 predictions += len(labels)
-                if i % 10 == 0:
+                if i % report_interval == 0:
                     logger.info("Iteration %d (Epoch %d): Cost %0.3f" % (i, epoch, c))
                     train_writer.add_summary(s, global_step=i)
+                if max_iteration is not None and i > max_iteration:
+                    break
             train_writer.flush()
 
 
