@@ -26,6 +26,7 @@ def main():
 
     train_arguments = argparse.ArgumentParser(add_help=False)
     train_arguments.add_argument("--batch-size", type=int, default=100, help="batch size, default 100")
+    train_arguments.add_argument("--summary-directory", help="directory into which to write summary files")
 
     subparsers = parser.add_subparsers(title="Machine-assisted writing", description=__doc__)
 
@@ -43,7 +44,6 @@ def main():
                                   See ghostwriter tokenize --help for details about tokenization."""))
     embed.add_argument("--width", type=int, default=1, help="skip-gram window size, default 1")
     embed.add_argument("--embedding-size", type=int, default=128, help="vocabulary embedding size, default 128")
-    embed.add_argument("--summary-directory", help="directory into which to write summary files")
     embed.add_argument("--report-interval", type=int, default=100,
                        help="log and write summary after this many iterations, default 100")
     embed.add_argument("--iterations", type=int, default=1000, help="total training iterations, default 1000")
@@ -72,7 +72,8 @@ def train_command(args):
                          args.hidden_size, args.rnn_depth,
                          args.batch_size, args.time_steps,
                          5,
-                         tokens.vocabulary_size())
+                         tokens.vocabulary_size(),
+                         args.summary_directory)
 
 
 def embed_command(args):

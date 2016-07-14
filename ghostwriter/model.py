@@ -7,7 +7,11 @@ from ghostwriter import logger
 from ghostwriter.data import sequence_data_epoch, labeled_data
 
 
-def train_language_model(tokens, hidden_size, rnn_depth, batch_size, time_steps, max_gradient, vocabulary_size):
+def train_language_model(tokens,
+                         hidden_size, rnn_depth,
+                         batch_size, time_steps,
+                         max_gradient, vocabulary_size,
+                         summary_directory):
     with tf.Graph().as_default(), tf.variable_scope("model", initializer=tf.random_uniform_initializer(-0.01, 0.01)):
         x = tf.placeholder(tf.int32, shape=[batch_size, time_steps], name="x")
         y = tf.placeholder(tf.int32, shape=[batch_size, time_steps], name="y")
@@ -27,6 +31,7 @@ def train_language_model(tokens, hidden_size, rnn_depth, batch_size, time_steps,
         b = tf.get_variable("b", [vocabulary_size])
 
         logits = tf.matmul(y_predicted, w) + b
+        iteration = tf.Variable(0, name="iteration", trainable=False)
         loss = tf.nn.seq2seq.sequence_loss_by_example([logits],
                                                       [tf.reshape(y, [-1])],
                                                       [tf.ones([batch_size * time_steps])],
@@ -35,15 +40,16 @@ def train_language_model(tokens, hidden_size, rnn_depth, batch_size, time_steps,
         gradients, _ = tf.clip_by_global_norm(tf.gradients(cost, tf.trainable_variables()), max_gradient,
                                               name="clip_gradients")
         optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
-        train = optimizer.apply_gradients(zip(gradients, tf.trainable_variables()), name="train")
+        train = optimizer.apply_gradients(zip(gradients, tf.trainable_variables()), name="train",
+                                          global_step=iteration)
 
         tokens = numpy.array(list(tokens))
         with tf.Session() as session:
-            tf.initialize_all_variables().run()
+            session.run(tf.initialize_all_variables())
             previous_epoch = 1
             epoch_cost = 0
             predictions = 0
-            for epoch, iteration, vectors, labels in labeled_data(
+            for epoch, _, vectors, labels in labeled_data(
                     lambda: sequence_data_epoch(tokens, batch_size, time_steps)):
                 if not epoch == previous_epoch:
                     logger.info("Epoch %d, Training Perplexity %0.3f" %
@@ -52,11 +58,11 @@ def train_language_model(tokens, hidden_size, rnn_depth, batch_size, time_steps,
                     previous_epoch = epoch
                 if epoch > 5:
                     break
-                c, _ = session.run([cost, train], feed_dict={x: vectors, y: labels})
+                i, c, _ = session.run([iteration, cost, train], feed_dict={x: vectors, y: labels})
                 epoch_cost += c
                 predictions += len(labels)
-                if iteration % 10 == 0:
-                    logger.info("Iteration %d (Epoch %d): Loss %0.3f" % (iteration, epoch, c))
+                if i % 10 == 0:
+                    logger.info("Iteration %d (Epoch %d): Cost %0.3f" % (i, epoch, c))
 
 
 def create_embeddings(data, batch_size,
