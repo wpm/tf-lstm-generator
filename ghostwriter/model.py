@@ -60,6 +60,7 @@ def train_language_model(tokens,
                                 (previous_epoch, numpy.exp(epoch_cost / predictions)))
                     epoch_cost = 0
                     previous_epoch = epoch
+                    predictions = 0
                 if max_epoch is not None and epoch > max_epoch:
                     break
                 s, i, c, _ = session.run([summary, iteration, cost, train], feed_dict={x: vectors, y: labels})
