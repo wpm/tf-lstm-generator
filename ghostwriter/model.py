@@ -36,15 +36,18 @@ def train_language_model(tokens,
                                                       [tf.reshape(y, [-1])],
                                                       [tf.ones([batch_size * time_steps])],
                                                       name="loss")
-        cost = tf.reduce_sum(loss) / batch_size
+        cost = tf.div(tf.reduce_sum(loss), batch_size, name="cost")
+        tf.scalar_summary(cost.op.name, cost)
         gradients, _ = tf.clip_by_global_norm(tf.gradients(cost, tf.trainable_variables()), max_gradient,
                                               name="clip_gradients")
         optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
         train = optimizer.apply_gradients(zip(gradients, tf.trainable_variables()), name="train",
                                           global_step=iteration)
+        summary = tf.merge_all_summaries()
 
         tokens = numpy.array(list(tokens))
         with tf.Session() as session:
+            train_writer = summary_writer(summary_directory, session.graph)
             session.run(tf.initialize_all_variables())
             previous_epoch = 1
             epoch_cost = 0
@@ -58,11 +61,13 @@ def train_language_model(tokens,
                     previous_epoch = epoch
                 if epoch > 5:
                     break
-                i, c, _ = session.run([iteration, cost, train], feed_dict={x: vectors, y: labels})
+                s, i, c, _ = session.run([summary, iteration, cost, train], feed_dict={x: vectors, y: labels})
                 epoch_cost += c
                 predictions += len(labels)
                 if i % 10 == 0:
                     logger.info("Iteration %d (Epoch %d): Cost %0.3f" % (i, epoch, c))
+                    train_writer.add_summary(s, global_step=i)
+            train_writer.flush()
 
 
 def create_embeddings(data, batch_size,
