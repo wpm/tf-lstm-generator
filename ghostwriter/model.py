@@ -14,36 +14,42 @@ def train_language_model(tokens,
                          report_interval, max_epoch, max_iteration,
                          summary_directory):
     with tf.Graph().as_default(), tf.variable_scope("model", initializer=tf.random_uniform_initializer(-0.01, 0.01)):
-        x = tf.placeholder(tf.int32, shape=[batch_size, time_steps], name="x")
-        y = tf.placeholder(tf.int32, shape=[batch_size, time_steps], name="y")
-
-        rnn_cell = tf.nn.rnn_cell.LSTMCell(hidden_size)
-        rnn_layers = tf.nn.rnn_cell.MultiRNNCell([rnn_cell] * rnn_depth)
-        state = rnn_cell.zero_state(batch_size, tf.float32)
-
-        embedding = tf.get_variable("embedding", shape=[vocabulary_size, hidden_size])
-        token_embeddings = tf.nn.embedding_lookup(embedding, x, name="token_embeddings")
-
-        inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(1, time_steps, token_embeddings)]
-        y_predicted, state = tf.nn.rnn(rnn_layers, inputs, initial_state=state)
-        y_predicted = tf.reshape(tf.concat(1, y_predicted), [-1, hidden_size])
-
-        w = tf.get_variable("w", [hidden_size, vocabulary_size])
-        b = tf.get_variable("b", [vocabulary_size])
-
-        logits = tf.matmul(y_predicted, w) + b
         iteration = tf.Variable(0, name="iteration", trainable=False)
-        loss = tf.nn.seq2seq.sequence_loss_by_example([logits],
-                                                      [tf.reshape(y, [-1])],
-                                                      [tf.ones([batch_size * time_steps])],
-                                                      name="loss")
-        cost = tf.div(tf.reduce_sum(loss), batch_size, name="cost")
-        tf.scalar_summary(cost.op.name, cost)
-        gradients, _ = tf.clip_by_global_norm(tf.gradients(cost, tf.trainable_variables()), max_gradient,
-                                              name="clip_gradients")
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
-        train = optimizer.apply_gradients(zip(gradients, tf.trainable_variables()), name="train",
-                                          global_step=iteration)
+
+        with tf.name_scope("Input"):
+            x = tf.placeholder(tf.int32, shape=[batch_size, time_steps], name="x")
+            y = tf.placeholder(tf.int32, shape=[batch_size, time_steps], name="y")
+
+        with tf.name_scope("Embedding"):
+            embedding = tf.get_variable("embedding", shape=[vocabulary_size, hidden_size])
+            token_embeddings = tf.nn.embedding_lookup(embedding, x, name="token_embeddings")
+
+        with tf.name_scope("RNN"):
+            rnn_cell = tf.nn.rnn_cell.LSTMCell(hidden_size)
+            rnn_layers = tf.nn.rnn_cell.MultiRNNCell([rnn_cell] * rnn_depth)
+            state = rnn_cell.zero_state(batch_size, tf.float32)
+
+            inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(1, time_steps, token_embeddings)]
+            y_predicted, state = tf.nn.rnn(rnn_layers, inputs, initial_state=state)
+            y_predicted = tf.reshape(tf.concat(1, y_predicted), [-1, hidden_size])
+
+        with tf.name_scope("Evaluation"):
+            w = tf.get_variable("w", [hidden_size, vocabulary_size])
+            b = tf.get_variable("b", [vocabulary_size])
+            logits = tf.matmul(y_predicted, w) + b
+            loss = tf.nn.seq2seq.sequence_loss_by_example([logits],
+                                                          [tf.reshape(y, [-1])],
+                                                          [tf.ones([batch_size * time_steps])],
+                                                          name="loss")
+            cost = tf.div(tf.reduce_sum(loss), batch_size, name="cost")
+            tf.scalar_summary(cost.op.name, cost)
+
+        with tf.name_scope("Train"):
+            gradients, _ = tf.clip_by_global_norm(tf.gradients(cost, tf.trainable_variables()), max_gradient,
+                                                  name="clip_gradients")
+            optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+            train = optimizer.apply_gradients(zip(gradients, tf.trainable_variables()), name="train",
+                                              global_step=iteration)
         summary = tf.merge_all_summaries()
 
         tokens = numpy.array(list(tokens))
